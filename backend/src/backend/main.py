@@ -26,7 +26,12 @@ SESSIONS = {}
 
 # Openai thing seems to now allow just putting list[T] in the type hint
 class ArticulateCardsList(BaseModel):
-    cards: List['ArticulateCard']
+    person: List[str]
+    world: List[str]
+    object: List[str]
+    action: List[str]
+    nature: List[str]
+    random: List[str]
 
 
 class ArticulateCard(BaseModel):
@@ -65,13 +70,56 @@ async def create_messages(
                 "content":
                     f"Generate {count} articulate cards with the themes: {themes} "
                     f"for players born in {birth_years}. "
-                    f"Each card should be unique and not include any previously played cards: {already_played_cards}.",
+                    f"Each card should be unique and not include any of the values from these cards: {already_played_cards}.",
             }
         ],
         text_format=ArticulateCardsList,
     )
 
-    return response.output_parsed.cards
+    cards: ArticulateCardsList = response.output_parsed
+
+    # Remove all duplicate cards
+    seen_person = set(card.person for card in already_played_cards)
+    seen_world = set(card.world for card in already_played_cards)
+    seen_object = set(card.object for card in already_played_cards)
+    seen_action = set(card.action for card in already_played_cards)
+    seen_nature = set(card.nature for card in already_played_cards)
+    seen_random = set(card.random for card in already_played_cards)
+
+    unique_persons = set(cards.person) - seen_person
+    unique_worlds = set(cards.world) - seen_world
+    unique_objects = set(cards.object) - seen_object
+    unique_actions = set(cards.action) - seen_action
+    unique_natures = set(cards.nature) - seen_nature
+    unique_randoms = set(cards.random) - seen_random
+
+    # Create unique cards from the unique values
+
+    count = min(
+        len(unique_persons),
+        len(unique_worlds),
+        len(unique_objects),
+        len(unique_actions),
+        len(unique_natures),
+        len(unique_randoms),
+    )
+
+    unique_cards = []
+    for _ in range(count):
+        if not unique_persons or not unique_worlds or not unique_objects or not unique_actions or not unique_natures:
+            break  # Not enough unique values to create more cards
+
+        card = ArticulateCard(
+            person=unique_persons.pop(),
+            world=unique_worlds.pop(),
+            object=unique_objects.pop(),
+            action=unique_actions.pop(),
+            nature=unique_natures.pop(),
+            random= unique_randoms.pop(),
+        )
+        unique_cards.append(card)
+
+    return unique_cards
 
 
 @app.get("/")

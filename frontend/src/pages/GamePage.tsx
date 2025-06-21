@@ -14,18 +14,22 @@ import SessionService, {type CardDto} from "@/services/session-service.ts";
 export default function GamePage() {
     const {gameId} = useParams<{ gameId: string }>();
 
+    const [resetCount, setResetCount] = useState(0);
+    const [isOutOfTime, setIsOutOfTime] = useState(true);
+
     const [count, setCount] = useState(0);
+    const [cardsPopulated, setCardsPopulated] = useState(false);
     const [leftCard, setLeftCard] = useState<CardDto | null>(null);
     const [rightCard, setRightCard] = useState<CardDto | null>(null);
 
     useEffect(() => {
         const populateCards = async () => {
-            setLeftCard(await SessionService.getCard(gameId!))
-            setRightCard(await SessionService.getCard(gameId!))
+            await SessionService.ensureCards(gameId!);
+            setCardsPopulated(true);
         }
 
         populateCards();
-    }, []);
+    }, [gameId]);
 
     const leftOnNext = async () => {
         const newCard = await SessionService.getCard(gameId!);
@@ -39,19 +43,43 @@ export default function GamePage() {
         setCount((count) => count + 1);
     }
 
+    const onOutOfTime = () => {
+        setIsOutOfTime(true);
+    }
+
+    const onReset = async () => {
+        setResetCount((prev) => prev + 1);
+        setIsOutOfTime(false);
+        setCount(0);
+        setLeftCard(await SessionService.getCard(gameId!));
+        setRightCard(await SessionService.getCard(gameId!));
+    }
+
     return (
         <div className="flex flex-col max-w-7xl mx-auto p-4 gap-6">
-            <TimerBar/>
-            <div className="flex flex-row items-center gap-4">
-                {
-                    leftCard && rightCard &&
-                    <>
-                        <Deck card={leftCard} onNext={leftOnNext}/>
-                        <Deck card={rightCard} onNext={rightOnNext}/>
-                    </>
-                }
+            {
+                !isOutOfTime &&
+                <>
+                    <TimerBar onOutOfTime={onOutOfTime} resetTrigger={resetCount}/>
+                    <div className="flex flex-row items-center gap-4">
+                        {
+                            leftCard && rightCard &&
+                            <>
+                                <Deck card={leftCard} onNext={leftOnNext}/>
+                                <Deck card={rightCard} onNext={rightOnNext}/>
+                            </>
+                        }
 
-            </div>
+                    </div>
+                </>
+            }
+            {
+                isOutOfTime &&
+                <>
+                    <p className="text-4xl font-black text-center">Times up!</p>
+                    <Button className="max-w-md mx-auto" size="lg" onClick={onReset} disabled={!cardsPopulated}>Play Again</Button>
+                </>
+            }
             <ScoreBoard score={count}/>
         </div>
     );
@@ -86,17 +114,33 @@ const Deck = ({onNext, card}: { onNext: () => void, card: CardDto }) => {
 }
 
 
-const TimerBar = () => {
-    const [timeLeft, setTimeLeft] = useState(60); // seconds
-    const percentage = ((60 - timeLeft) / 60) * 100;
+interface TimerBarProps {
+    resetTrigger?: number;
+    onOutOfTime?: () => void;
+}
+
+const TimerBar = ({resetTrigger, onOutOfTime}: TimerBarProps) => {
+    const [timeLeft, setTimeLeft] = useState(45); // seconds
+    const percentage = ((45 - timeLeft) / 45) * 100;
 
     useEffect(() => {
-        if (timeLeft <= 0) return;
+        setTimeLeft(45); // Reset timer to 60 seconds
+    }, [resetTrigger]);
+
+    useEffect(() => {
+        if (timeLeft <= 0) {
+            setTimeLeft(0);
+            if (onOutOfTime) {
+                onOutOfTime();
+            }
+            return; // Stop the timer when time is up
+
+        }
         const timer = setInterval(() => {
             setTimeLeft(prev => prev - 1);
         }, 1000);
         return () => clearInterval(timer);
-    }, [timeLeft]);
+    }, [timeLeft, onOutOfTime]);
 
     return (
         <div className="w-full mt-4 space-y-2">

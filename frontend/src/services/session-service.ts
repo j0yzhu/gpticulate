@@ -19,7 +19,7 @@ export interface CardDto {
 export default class SessionService {
     private static cardCache: Record<string, CardDto[]> = {};
     private static fetchLocks: Record<string, Promise<void> | null> = {};
-    private static readonly MIN_CACHE_SIZE = 5;
+    private static readonly MIN_CACHE_SIZE = 8;
 
     private static createApiUrl(endpoint: string): string {
         if (!apiUrl) {
@@ -64,6 +64,7 @@ export default class SessionService {
     }
 
     private static async getCards(sessionId: string): Promise<CardDto[]> {
+        console.log(`Fetching cards for session ${sessionId}...`);
         const response = await fetch(SessionService.createApiUrl(`/sessions/${sessionId}/cards`));
         if (!response.ok) {
             throw new Error('Failed to fetch cards');
@@ -71,7 +72,7 @@ export default class SessionService {
         return response.json();
     }
 
-    private static _ensureCards(sessionId: string): Promise<void> {
+    public  static ensureCards(sessionId: string): Promise<void> {
         if (!SessionService.fetchLocks[sessionId]) {
             SessionService.fetchLocks[sessionId] = (async () => {
                 try {
@@ -92,17 +93,21 @@ export default class SessionService {
     public static async getCard(sessionId: string): Promise<CardDto> {
         // If cache empty or uninitialized, load cards before proceeding.
         if (!SessionService.cardCache[sessionId]?.length) {
-            await SessionService._ensureCards(sessionId);
+            await SessionService.ensureCards(sessionId);
         }
 
         // At this point there must be at least one card.
         const card = SessionService.cardCache[sessionId].shift()!;
 
         // If we’ve dipped below the minimum threshold, start an async refill.
+        console.log(`Card cache for session ${sessionId} has ${SessionService.cardCache[sessionId].length} cards left.`);
         if (SessionService.cardCache[sessionId].length < SessionService.MIN_CACHE_SIZE) {
-            SessionService._ensureCards(sessionId).catch(err => {
-                console.error(`Error replenishing cards for session ${sessionId}:`, err);
-            });
+            console.log(`Replenishing cards for session ${sessionId}...`);
+            SessionService.ensureCards(sessionId)
+                .catch(err => {
+                    console.error(`Error replenishing cards for session ${sessionId}:`, err)
+                })
+                .then(() => console.log(`Replenishment for session ${sessionId} completed.`));
         }
 
         return card;
