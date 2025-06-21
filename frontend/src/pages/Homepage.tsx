@@ -130,7 +130,9 @@ function SetupCard() {
                             type="number"
                             placeholder="Add age group"
                         />
-                        <Button>
+                        <Button
+                            variant="outline"
+                        >
                             Add
                         </Button>
                     </div>
@@ -170,14 +172,17 @@ function SetupCard() {
                             type="text"
                             placeholder="Add topic"
                         />
-                        <Button>
+                        <Button
+                            variant="outline"
+                        >
                             Add
                         </Button>
                     </div>
                 </form>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="justify-center">
                 <Button
+                    size="lg"
                     onClick={handlePlay}
                     disabled={ages.length === 0 || topics.length === 0}
                 >Play</Button>
