@@ -1,9 +1,18 @@
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware, # type: ignore
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -70,27 +79,33 @@ def read_root():
 
 
 class Session(BaseModel):
-    session_id: str
+    id: str
     created_at: datetime
     themes: list[str]
     birth_years: list[int]
     already_played_cards: list[ArticulateCard] = []
 
+@app.get("/sessions/{session_id}")
+async def get_session(session_id: str) -> Session:
+    if session_id not in SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return SESSIONS[session_id]
+
+
+class SessionInput(BaseModel):
+    themes: list[str]
+    birth_years: list[int]
 
 @app.post("/sessions")
-async def create_session(
-        themes: list[str],
-        birth_years: list[int]
-) -> Session:
+async def create_session(input: SessionInput) -> Session:
     session = Session(
-        session_id=str(uuid.uuid4()),
+        id=str(uuid.uuid4()),
         created_at=datetime.now(),
-        themes=themes,
-        birth_years=birth_years,
+        themes=input.themes,
+        birth_years=input.birth_years,
     )
-
-    SESSIONS[session.session_id] = session
-
+    SESSIONS[session.id] = session
     return session
 
 
