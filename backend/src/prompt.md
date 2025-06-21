@@ -5,6 +5,7 @@ You are generating word cards for a fast-paced guessing game similar to *Articul
 - **Object**: A notable item, artifact, or tool from the theme(s)
 - **Action**: A clear verb or activity associated with the theme(s)
 - **Nature**: A natural element, creature, or environmental feature from the theme(s)
+- **Random**: A wildcard entry that can be any relevant word, phrase, or concept that fits the theme(s)
 
 ### Constraints:
 - All entries must be **clear, recognizable, and relevant** to the provided themes.

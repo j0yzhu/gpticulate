@@ -35,6 +35,7 @@ class ArticulateCard(BaseModel):
     object: str
     action: str
     nature: str
+    random: str
 
 
 current_file = Path(__file__).resolve()

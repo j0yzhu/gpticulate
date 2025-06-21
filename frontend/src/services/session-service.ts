@@ -7,12 +7,13 @@ interface SessionDto {
     birth_years: number[];
 }
 
-interface CardDto {
+export interface CardDto {
     person: string;
     world: string;
     object: string;
     action: string;
     nature: string;
+    random: string;
 }
 
 export default class SessionService {
