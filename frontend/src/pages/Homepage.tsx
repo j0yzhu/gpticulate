@@ -24,7 +24,7 @@ export default function Homepage() {
                     GPTiculate.
                 </h1>
                 <p className="text-lg text-muted-foreground text-center">
-                    By Eli Chander, Joy Zhu
+                    By Eli Chandler, Joy Zhu
                 </p>
             </div>
 
